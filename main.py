@@ -104,9 +104,7 @@ except Exception as e:
     print(f"🚨 CRITICAL ERROR DURING INITIALIZATION: {e}")
     traceback.print_exc(file=sys.stdout)
 
-# ==============================================================================
-#  Helper Functions (기존과 동일)
-# ==============================================================================
+
 def get_jobs_by_selenium(search_region):
     print(f"--- '{search_region}' 지역 검색 시작 ---")
     region_code = REGION_CODES.get(search_region)
@@ -116,16 +114,15 @@ def get_jobs_by_selenium(search_region):
 
     job_results = []
     try:
-        service = Service()
-        with webdriver.Chrome(service=service, options=chrome_options) as driver:
+        # Service 객체 없이 options만으로 webdriver를 초기화합니다.
+        # Dockerfile에서 시스템 경로에 chromedriver를 설치했기 때문에 자동으로 인식됩니다.
+        with webdriver.Chrome(options=chrome_options) as driver:
             base_url = "https://www.work.go.kr/empInfo/empInfoSrch/list/dtlEmpSrchList.do"
-            # 페이지당 결과 수를 100개로 최대로 설정하여 한 번에 많은 정보 가져오기
             search_params = f"region={region_code}&resultCnt=100&sortOrderBy=DESC&sortField=DATE"
             target_url = f"{base_url}?{search_params}"
             driver.get(target_url)
 
-            # 페이지가 완전히 로드될 때까지 잠시 대기
-            time.sleep(3)
+            time.sleep(3) # 페이지 로딩 대기
 
             soup = BeautifulSoup(driver.page_source, 'html.parser')
             job_list_rows = soup.select("table.board-list > tbody > tr")
@@ -141,13 +138,14 @@ def get_jobs_by_selenium(search_region):
                     job_results.append({
                         'company': company_tag.text.strip(),
                         'title': title_tag.text.strip(),
-                        'source_region': search_region  # 어느 지역에서 수집했는지 명시
+                        'source_region': search_region
                     })
             print(f"✅ '{search_region}' 지역에서 {len(job_results)}개의 채용 정보를 찾았습니다.")
     except Exception as e:
         print(f"🚨 '{search_region}' 크롤링 중 오류 발생: {e}")
         traceback.print_exc(file=sys.stdout)
     return job_results
+
 
 def upload_jobs_to_firestore(jobs_list):
     if not db or not jobs_list:
