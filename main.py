@@ -183,7 +183,7 @@ def get_jobs_by_selenium(search_region):
     service = Service(executable_path='/usr/bin/chromedriver')
     with webdriver.Chrome(service=service, options=chrome_options) as driver:
         base_url = "https://www.work.go.kr/empInfo/empInfoSrch/list/dtlEmpSrchList.do"
-        search_params = f"region={region_code}&resultCnt=100&sortOrderBy=DESC&sortField=DATE"
+        search_params = f"region={region_code}&resultCnt=10&sortOrderBy=DESC&sortField=DATE"
         target_url = f"{base_url}?{search_params}"
         driver.get(target_url)
         time.sleep(3)
@@ -202,4 +202,5 @@ def upload_jobs_to_firestore(jobs_list):
         doc_ref = db.collection('worknet_jobs').document(doc_id)
         batch.set(doc_ref, job, merge=True)
     batch.commit()
+
     print(f"✅ {len(jobs_list)}개 정보 Firestore 업로드 완료. (지역: {jobs_list[0]['source_region']})")
