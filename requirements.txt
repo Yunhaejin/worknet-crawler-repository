@@ -1,0 +1,6 @@
+# requirements.txt
+functions-framework
+firebase-admin
+google-cloud-firestore
+beautifulsoup4
+selenium
