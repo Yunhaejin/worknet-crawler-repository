@@ -104,6 +104,8 @@ except Exception as e:
     print(f"🚨 CRITICAL ERROR DURING INITIALIZATION: {e}")
     traceback.print_exc(file=sys.stdout)
 
+# main.py 파일에서 이 함수를 찾아서 전체를 교체하세요.
+
 def get_jobs_by_selenium(search_region):
     print(f"--- '{search_region}' 지역 검색 시작 ---")
     region_code = REGION_CODES.get(search_region)
@@ -113,8 +115,11 @@ def get_jobs_by_selenium(search_region):
 
     job_results = []
     try:
-        # Service 객체 없이 options만으로 webdriver를 초기화합니다.
-        with webdriver.Chrome(options=chrome_options) as driver:
+        # Dockerfile을 통해 시스템에 설치된 chromedriver의 경로를 직접 지정합니다.
+        service = Service(executable_path='/usr/bin/chromedriver')
+        
+        # service와 options를 다시 함께 사용합니다.
+        with webdriver.Chrome(service=service, options=chrome_options) as driver:
             base_url = "https://www.work.go.kr/empInfo/empInfoSrch/list/dtlEmpSrchList.do"
             search_params = f"region={region_code}&resultCnt=100&sortOrderBy=DESC&sortField=DATE"
             target_url = f"{base_url}?{search_params}"
