@@ -1,5 +1,3 @@
-# main.py (일괄 수집 방식으로 변경된 최종본)
-
 import os
 import sys
 import time
