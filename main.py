@@ -4,7 +4,6 @@ import time
 import traceback
 import hashlib
 import json
-
 import firebase_admin
 from firebase_admin import firestore
 import functions_framework
@@ -27,6 +26,9 @@ try:
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--window-size=1920x1080")
+    chrome_options.add_argument("--ignore-certificate-errors")
+    chrome_options.add_argument("--disable-extensions")
+    chrome_options.add_argument("--start-maximized")
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36")
 
     # (기존 REGION_CODES 딕셔너리는 그대로 유지됩니다)
@@ -220,5 +222,4 @@ def batch_crawl_trigger(request):
         error_message = f"🚨 An error occurred in batch_crawl_trigger: {e}"
         print(error_message)
         traceback.print_exc(file=sys.stdout)
-
         return (error_message, 500)
