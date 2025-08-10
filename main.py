@@ -121,7 +121,7 @@ def get_jobs_by_selenium(search_region):
         # service와 options를 다시 함께 사용합니다.
         with webdriver.Chrome(service=service, options=chrome_options) as driver:
             base_url = "https://www.work.go.kr/empInfo/empInfoSrch/list/dtlEmpSrchList.do"
-            search_params = f"region={region_code}&resultCnt=100&sortOrderBy=DESC&sortField=DATE"
+            search_params = f"region={region_code}&resultCnt=10&sortOrderBy=DESC&sortField=DATE"
             target_url = f"{base_url}?{search_params}"
             driver.get(target_url)
 
