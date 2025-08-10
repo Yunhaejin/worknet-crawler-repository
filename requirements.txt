@@ -1,0 +1,7 @@
+# requirements.txt
+functions-framework
+firebase-admin
+google-cloud-firestore
+google-cloud-pubsub
+beautifulsoup4
+selenium

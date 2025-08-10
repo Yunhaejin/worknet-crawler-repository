@@ -1,0 +1,25 @@
+# Dockerfile.scheduler (지시자 서비스를 위한 전용 Dockerfile)
+
+# 1. 베이스 이미지 설정
+FROM python:3.11-slim
+
+# 2. 시스템 패키지 설치 (크롤러가 아니므로 chromium은 필요 없습니다)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
+# 3. 작업 디렉토리 설정
+WORKDIR /app
+
+# 4. requirements.txt 복사 및 설치
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 5. 소스 코드 복사
+COPY . .
+
+# 6. 포트 노출
+EXPOSE 8080
+
+# 7. ⭐ 컨테이너 시작 명령어 (가장 중요)
+# --target을 schedule_crawl_jobs 로 지정합니다.
+ENTRYPOINT ["functions-framework", "--target=schedule_crawl_jobs", "--source=main.py", "--port=8080"]
