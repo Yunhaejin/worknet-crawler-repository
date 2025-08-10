@@ -104,7 +104,6 @@ except Exception as e:
     print(f"🚨 CRITICAL ERROR DURING INITIALIZATION: {e}")
     traceback.print_exc(file=sys.stdout)
 
-
 def get_jobs_by_selenium(search_region):
     print(f"--- '{search_region}' 지역 검색 시작 ---")
     region_code = REGION_CODES.get(search_region)
@@ -115,7 +114,6 @@ def get_jobs_by_selenium(search_region):
     job_results = []
     try:
         # Service 객체 없이 options만으로 webdriver를 초기화합니다.
-        # Dockerfile에서 시스템 경로에 chromedriver를 설치했기 때문에 자동으로 인식됩니다.
         with webdriver.Chrome(options=chrome_options) as driver:
             base_url = "https://www.work.go.kr/empInfo/empInfoSrch/list/dtlEmpSrchList.do"
             search_params = f"region={region_code}&resultCnt=100&sortOrderBy=DESC&sortField=DATE"
@@ -145,7 +143,6 @@ def get_jobs_by_selenium(search_region):
         print(f"🚨 '{search_region}' 크롤링 중 오류 발생: {e}")
         traceback.print_exc(file=sys.stdout)
     return job_results
-
 
 def upload_jobs_to_firestore(jobs_list):
     if not db or not jobs_list:
