@@ -1,5 +1,3 @@
-# main.py (Pub/Sub 방식으로 변경된 최종본)
-
 import os
 import sys
 import time
@@ -170,37 +168,105 @@ def process_region_job(cloud_event):
         print(f"🚨 작업 처리 중 최종 오류 발생: {e}")
         traceback.print_exc(file=sys.stdout)
 
-# ==============================================================================
-#  Helper Functions (기존과 거의 동일)
-# ==============================================================================
+# Helper Functions 부분을 아래와 같이 수정하세요.
+
 def get_jobs_by_selenium(search_region):
-    # 이 함수는 이전 최종본과 동일합니다. (resultCnt=100)
-    # Service 객체를 사용하여 명시적으로 드라이버 경로를 지정하는 방식을 유지합니다.
     region_code = REGION_CODES.get(search_region)
-    if not region_code: return []
+    if not region_code:
+        print(f"⚠️ '{search_region}'에 해당하는 지역 코드가 없습니다.")
+        return []
     
     job_results = []
-    service = Service(executable_path='/usr/bin/chromedriver')
-    with webdriver.Chrome(service=service, options=chrome_options) as driver:
+    
+    # 🔴 중요: Cloud Functions 환경에서는 executable_path를 명시하지 않는 것이 더 안정적일 수 있습니다.
+    # Selenium 4.6 이상에서는 드라이버를 자동으로 관리해줍니다.
+    
+    with webdriver.Chrome(options=chrome_options) as driver:
         base_url = "https://www.work.go.kr/empInfo/empInfoSrch/list/dtlEmpSrchList.do"
+        
+        # 🔴 테스트를 위해 resultCnt를 100으로 늘려보는 것을 권장합니다.
         search_params = f"region={region_code}&resultCnt=10&sortOrderBy=DESC&sortField=DATE"
         target_url = f"{base_url}?{search_params}"
+        
+        # ✅ 진단 로그 1: 어떤 URL에 접근하는지 확인
+        print(f"[{search_region}] 크롤링 시작: {target_url}")
+        
         driver.get(target_url)
-        time.sleep(3)
+        time.sleep(3) # 페이지 로딩 대기
+        
         soup = BeautifulSoup(driver.page_source, 'html.parser')
-        # ... (이하 파싱 및 데이터 추가 로직은 기존과 동일)
+        
+        # --- (이하 파싱 및 데이터 추가 로직은 기존과 동일) ---
+        # ❗️❗️❗️ 여기에 본인의 파싱 코드를 넣으세요 ❗️❗️❗️
+        # 예시: job_list_items = soup.select('CSS 선택자')
+        job_list_items = soup.select('#content > div.list-wrap > div.sub-list-wrap > table > tbody > tr')
+
+        # ✅ 진단 로그 2: 파싱으로 몇 개의 항목을 찾았는지 확인
+        print(f"[{search_region}] BeautifulSoup 파싱 결과: {len(job_list_items)}개의 항목을 찾았습니다.")
+
+        if not job_list_items:
+            # ✅ 진단 로그 3: 항목이 없을 경우 HTML 소스 덤프 (디버깅용)
+            # 파일로 저장할 수 없으므로, 일부만 출력하여 구조 확인
+            print(f"[{search_region}] 채용 정보가 없습니다. 현재 페이지의 HTML 일부를 출력합니다:")
+            print(driver.page_source[:2000]) # 앞 2000자만 출력
+
+        # ... (이하 파싱 및 job_results에 데이터 추가하는 로직)
+        for item in job_list_items:
+            # 각 항목(회사명, 제목 등)이 없는 경우를 대비해 None 체크를 추가하는 것이 안전합니다.
+            
+            # 회사명
+            company_element = item.select_one("td:nth-of-type(2) span.cp_name a")
+            company = company_element.text.strip() if company_element else "정보 없음"
+            
+            # 채용 제목 및 상세 링크
+            title_element = item.select_one("td:nth-of-type(3) .title a")
+            title = title_element.text.strip() if title_element else "정보 없음"
+            detail_link = "https://www.work.go.kr" + title_element['href'] if title_element else "정보 없음"
+            
+            # 근무 지역
+            location_element = item.select_one("td:nth-of-type(4) p")
+            location = location_element.get_text(strip=True) if location_element else "정보 없음"
+            
+            # 경력 및 학력
+            experience_element = item.select_one("td:nth-of-type(5) p")
+            experience = experience_element.get_text(strip=True) if experience_element else "정보 없음"
+            
+            # 임금 조건
+            salary_element = item.select_one("td:nth-of-type(6) p")
+            salary = salary_element.get_text(strip=True) if salary_element else "정보 없음"
+            
+            # 추출한 정보를 딕셔너리로 묶습니다.
+            job_data = {
+                "company": company,
+                "title": title,
+                "link": detail_link,
+                "location": location,
+                "experience": experience,
+                "salary": salary,
+                "source_region": search_region # 검색했던 지역도 함께 저장
+            }
+            
+            # 최종 결과 리스트에 추가
+            job_results.append(job_data)
+            
+
+    # ✅ 진단 로그 4: 최종적으로 반환되는 채용 정보의 개수 확인
+    print(f"[{search_region}] 크롤링 완료. 최종 {len(job_results)}개의 채용 정보를 반환합니다.")
     return job_results
 
 def upload_jobs_to_firestore(jobs_list):
-    # 이 함수도 기존과 동일합니다.
     if not db or not jobs_list: return
+
+    # Firestore 쓰기 전 로그 추가
+    print(f" Firestore 업로드 시작: {len(jobs_list)}개 정보 (지역: {jobs_list[0]['source_region']})")
+    
     batch = db.batch()
     for job in jobs_list:
         job['crawled_at'] = firestore.SERVER_TIMESTAMP
-        unique_key = f"{job['company']}_{job['title']}_{job['source_region']}"
+        unique_key = f"{job.get('company', '')}_{job.get('title', '')}_{job.get('source_region', '')}"
         doc_id = hashlib.sha256(unique_key.encode()).hexdigest()
         doc_ref = db.collection('worknet_jobs').document(doc_id)
         batch.set(doc_ref, job, merge=True)
+    
     batch.commit()
-
-    print(f"✅ {len(jobs_list)}개 정보 Firestore 업로드 완료. (지역: {jobs_list[0]['source_region']})")
+    print(f"✅ Firestore 업로드 완료. (지역: {jobs_list[0]['source_region']})")
